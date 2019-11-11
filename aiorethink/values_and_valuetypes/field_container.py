@@ -152,7 +152,7 @@ class FieldContainer(collections.abc.MutableMapping,
     ###########################################################################
     # DB queries and related funcs
     ###########################################################################
-        
+
     @classmethod
     def from_cursor(cls, cursor):
         """Returns an ``aiorethink.db.CursorAsyncMap`` object, i.e. an
@@ -182,7 +182,7 @@ class FieldContainer(collections.abc.MutableMapping,
         FieldContainer objects (query returns a sequence). When writing your
         query, you know whether it will return a single object or a sequence
         (which might contain one object).
-        
+
         The query may or may not already have called run():
         * if run() has been called, then the query (strictly speaking, the
           awaitable) is just awaited. This gives the caller the opportunity to
@@ -207,7 +207,7 @@ class FieldContainer(collections.abc.MutableMapping,
 
         if res == None:
             return None
-        if isinstance(res, r.Cursor):
+        if isinstance(res, r.net.Cursor):
             return cls.from_cursor(res)
         if isinstance(res, dict):
             return cls.from_doc(res, stored_in_db = True)
@@ -274,7 +274,7 @@ class FieldContainer(collections.abc.MutableMapping,
 
     def get_key_for_dbkey(self, dbkey):
         return self._dbname_to_field_name.get(dbkey, dbkey)
-        
+
 
     def __setitem__(self, fld_name, value):
         if self.__class__.has_field_attr(fld_name):

@@ -5,7 +5,7 @@ from functools import partial
 import inspect
 import collections
 
-import rethinkdb as r
+from rethinkdb import r
 r.set_loop_type("asyncio")
 
 from .errors import IllegalAccessError, AlreadyExistsError
@@ -225,6 +225,8 @@ class ChangesAsyncMap(CursorAsyncIterator):
             message = await super().__anext__()
 
             if "new_val" not in message:
+                continue
+            if message['new_val'] is None:  # deletion events
                 continue
 
             mapped = self.mapper(message["new_val"])

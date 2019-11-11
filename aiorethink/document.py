@@ -3,7 +3,7 @@ import functools
 import inspect
 
 import inflection
-import rethinkdb as r
+from rethinkdb import r
 
 from . import ALL, DECLARED_ONLY, UNDECLARED_ONLY
 from .errors import IllegalSpecError, AlreadyExistsError, NotFoundError
@@ -170,14 +170,14 @@ class Document(FieldContainer, metaclass = _MetaDocument):
         """In the absence of proper migrations in aiorethink, there is no nice
         way to adapt an existing database to changes to either your
         _table_create_options or your _create_table_extras().
-        
+
         When you want to adapt an existing DB you would have to resort to do
         that either manually or by running a custom script that does the
         necessary changes. However, aiorethink allows you to do this from
         within your application code, resulting in automatic DB migration, if
         only in a pretty mad way... look at it as a very dirty but sometimes
         valuable hack.
-        
+
         You can override this method in subclasses to reconfigure database
         tables in order to reflect your changes to _table_create_options and
         _create_table_extras change over time. This method is called every time
@@ -205,7 +205,7 @@ class Document(FieldContainer, metaclass = _MetaDocument):
     ###########################################################################
     # DB queries (load, save, delete...) and related funcs
     ###########################################################################
-        
+
     @classmethod
     def cq(cls):
         """RethinkDB query prefix for queries on the Document's DB table.
@@ -227,7 +227,7 @@ class Document(FieldContainer, metaclass = _MetaDocument):
         If you sepcify `changes_query`, the query must return one complete
         document in new_val on each message. So don't use pluck() or something
         to that effect in your query.
-        
+
         The query may or may not already have called run():
         * if run() has been called, then the query (strictly speaking, the
           awaitable) is just awaited. This gives the caller the opportunity to
@@ -236,11 +236,11 @@ class Document(FieldContainer, metaclass = _MetaDocument):
           connection (or the default connection). This is more convenient for
           the caller than the former version.
         """
-        if changes_query == None:
+        if changes_query is None:
             changes_query = cls.cq().changes(include_types = True)
 
         feed = await _run_query(changes_query)
-        mapper = functools.partial(cls.from_doc, stored_in_db = True) 
+        mapper = functools.partial(cls.from_doc, stored_in_db = True)
 
         return ChangesAsyncMap(feed, mapper)
 
@@ -374,7 +374,7 @@ class Document(FieldContainer, metaclass = _MetaDocument):
     ###########################################################################
     # Point changefeeds (changefeeds on a single document object)
     ###########################################################################
-        
+
     class ChangesAsyncIterator(collections.abc.AsyncIterator):
         def __init__(self, doc, conn = None):
             self.doc = doc
