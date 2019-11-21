@@ -1,10 +1,14 @@
 from setuptools import setup, find_packages
-from aiorethink import __version__
-
 
 # Get the long description from the README file
 from codecs import open
 from os import path
+
+version = {}
+with open("aiorethink/version.py") as fp:
+    exec(fp.read(), version)
+# later on we use: version['__version__']
+
 here = path.abspath(path.dirname(__file__))
 with open(path.join(here, 'README.rst'), encoding='utf-8') as f:
     long_description = f.read()
@@ -12,7 +16,7 @@ with open(path.join(here, 'README.rst'), encoding='utf-8') as f:
 
 setup(
     name = "aiorethink",
-    version = __version__,
+    version = version['__version__'],
     description = "Asynchronous asyncio compatible ODM for RethinkDB",
     long_description = long_description,
     url = "https://github.com/lars-tiede/aiorethink",
