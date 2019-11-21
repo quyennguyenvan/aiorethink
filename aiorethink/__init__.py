@@ -1,5 +1,5 @@
-import rethinkdb
-rethinkdb.set_loop_type("asyncio")
+from rethinkdb import r
+r.set_loop_type("asyncio")
 
 __version__ = "0.2.2-pre"
 
