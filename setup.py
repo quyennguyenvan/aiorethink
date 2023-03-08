@@ -1,8 +1,8 @@
-from setuptools import setup, find_packages
-
 # Get the long description from the README file
 from codecs import open
 from os import path
+
+from setuptools import setup, find_packages
 
 version = {}
 with open("aiorethink/version.py") as fp:
@@ -13,23 +13,22 @@ here = path.abspath(path.dirname(__file__))
 with open(path.join(here, 'README.rst'), encoding='utf-8') as f:
     long_description = f.read()
 
-
 setup(
-    name = "aiorethink",
-    version = version['__version__'],
-    description = "Asynchronous asyncio compatible ODM for RethinkDB",
-    long_description = long_description,
-    url = "https://github.com/lars-tiede/aiorethink",
+    name="aiorethink",
+    version=version['__version__'],
+    description="Asynchronous asyncio compatible ODM for RethinkDB",
+    long_description=long_description,
+    url="https://github.com/lars-tiede/aiorethink",
 
-    author = "Lars Tiede",
-    author_email = "lars.tiede@gmail.com",
+    author="Lars Tiede",
+    author_email="lars.tiede@gmail.com",
 
-    license = "MIT",
+    license="MIT",
 
-    packages = find_packages(exclude=["docs", "tests"]),
-    install_requires = ["rethinkdb", "inflection"],
+    packages=find_packages(exclude=["docs", "tests"]),
+    install_requires=["rethinkdb", "inflection"],
 
-    classifiers = [
+    classifiers=[
         'Development Status :: 2 - Pre-Alpha',
         'Environment :: Web Environment',
         'Intended Audience :: Developers',
@@ -39,5 +38,5 @@ setup(
         'Programming Language :: Python :: 3.5',
         'Topic :: Database',
         'Topic :: Internet :: WWW/HTTP :: Dynamic Content',
-        ]
-    )
+    ]
+)

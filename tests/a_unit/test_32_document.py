@@ -1,14 +1,15 @@
 import asyncio
 
-import rethinkdb as r
 import pytest
-
+from rethinkdb import r
 import aiorethink as ar
+
 
 @pytest.fixture
 def EmptyDoc(aiorethink_session):
     class EmptyDoc(ar.Document):
         pass
+
     return EmptyDoc
 
 
@@ -31,11 +32,11 @@ def test_emptydoc_has_id_attr(EmptyDoc):
     assert hasattr(EmptyDoc, "id") and isinstance(EmptyDoc.id, ar.Field)
     d = EmptyDoc()
 
-    assert len(d) == 1 # 'id' attribute we got automatically
+    assert len(d) == 1  # 'id' attribute we got automatically
     assert d.len(ar.ALL) == 1
     assert d.len(ar.UNDECLARED_ONLY) == 0
     assert d.len(ar.DECLARED_ONLY) == 1
-    assert d.id == None # didn't get one yet
+    assert d.id is None  # didn't get one yet
 
 
 def test_emptydoc_has_pkey_alias(EmptyDoc):
@@ -44,7 +45,7 @@ def test_emptydoc_has_pkey_alias(EmptyDoc):
 
 def test_pkey_aliases_id(EmptyDoc):
     d = EmptyDoc()
-    assert d.id == d.pkey == None
+    assert d.id == d.pkey is None
     d.id = 1
     assert d.id == d.pkey == 1
     d.pkey = 2
@@ -59,7 +60,7 @@ def test_pkey_must_be_alias(aiorethink_session):
 
 def test_id_is_primary_key(aiorethink_session):
     class MyDoc(ar.Document):
-        id = ar.Field(primary_key = True)
+        id = ar.Field(primary_key=True)
 
     d = MyDoc()
     assert d.pkey == d.id
@@ -76,15 +77,16 @@ def test_id_but_no_primary_key(aiorethink_session):
 def test_two_primary_keys(aiorethink_session):
     with pytest.raises(ar.IllegalSpecError):
         class MyDoc(ar.Document):
-            f1 = ar.Field(primary_key = True)
-            f2 = ar.Field(primary_key = True)
+            f1 = ar.Field(primary_key=True)
+            f2 = ar.Field(primary_key=True)
 
 
 def test_custom_primary_key(aiorethink_session):
     class MyDoc(ar.Document):
-        f1 = ar.Field(primary_key = True)
+        f1 = ar.Field(primary_key=True)
+
     d = MyDoc()
-    assert len(d) == 1 # has only the primary key attribute
+    assert len(d) == 1  # has only the primary key attribute
     assert not hasattr(d, "id")
     assert "f1" in repr(d)
 
@@ -99,8 +101,8 @@ def test_copy_removes_pkey(MyTestDocs):
         d.f2 = "hello"
 
         e = d.copy()
-        assert d.pkey != None
-        assert e.pkey == None
+        assert d.pkey is not None
+        assert e.pkey is None
         assert e.f2 == d.f2 == "hello"
 
 
@@ -118,6 +120,7 @@ def EmptyDocCustomTableName(aiorethink_session):
         @classmethod
         def _get_tablename(cls):
             return "CustomTableName"
+
     return EmptyDocCustom
 
 
@@ -174,7 +177,7 @@ async def test_custom_table_create_options(db_conn, aiorethink_db_session):
 @pytest.mark.asyncio
 async def test_custom_pkey(db_conn, aiorethink_db_session):
     class CustomPkey(ar.Document):
-        f1 = ar.Field(primary_key = True)
+        f1 = ar.Field(primary_key=True)
 
     await CustomPkey._create_table()
 
@@ -186,7 +189,7 @@ async def test_custom_pkey(db_conn, aiorethink_db_session):
 @pytest.mark.asyncio
 async def test_secondary_index(db_conn, aiorethink_db_session):
     class SecIndex(ar.Document):
-        f1 = ar.Field(indexed = True)
+        f1 = ar.Field(indexed=True)
 
     await SecIndex._create_table()
 
@@ -208,13 +211,13 @@ def test_new_doc_not_stored_in_db(EmptyDoc):
 async def test_save_empty_doc(EmptyDoc, aiorethink_db_session, db_conn):
     await EmptyDoc._create_table()
     d = EmptyDoc()
-    assert d.id == None
-    assert d.stored_in_db == False
+    assert d.id is None
+    assert d.stored_in_db is False
 
     await d.save()
 
-    assert d.id != None
-    assert d.stored_in_db == True
+    assert d.id is not None
+    assert d.stored_in_db is True
     cn = await db_conn
     num_docs = await r.table(EmptyDoc._tablename).count().run(cn)
     assert num_docs == 1
@@ -224,7 +227,7 @@ async def test_save_empty_doc(EmptyDoc, aiorethink_db_session, db_conn):
 async def test_create_doc(EmptyDoc, aiorethink_db_session, db_conn):
     await EmptyDoc._create_table()
     cn = await db_conn
-    d = await EmptyDoc.create(f1 = 1, hello = "blah")
+    d = await EmptyDoc.create(f1=1, hello="blah")
     assert d.stored_in_db
     num_docs = await r.table(EmptyDoc._tablename).count().run(cn)
     assert num_docs == 1
@@ -235,9 +238,11 @@ def MyTestDocs(aiorethink_db_session, event_loop, db_conn):
     class Doc(ar.Document):
         f1 = ar.Field()
         f2 = ar.Field()
+
     class DocCustomPkey(ar.Document):
-        f1 = ar.Field(primary_key = True)
+        f1 = ar.Field(primary_key=True)
         f2 = ar.Field()
+
     arun = event_loop.run_until_complete
     cn = arun(db_conn.get())
     arun(Doc._create_table())
@@ -256,9 +261,9 @@ async def test_save_custom_pkey_doc(MyTestDocs):
     assert d.stored_in_db
 
     d = DocCustomPkey()
-    assert d.f1 == None
+    assert d.f1 is None
     await d.save()
-    assert d.f1 != None
+    assert d.f1 is not None
     assert d.stored_in_db
 
 
@@ -284,8 +289,10 @@ async def test_update_doc(MyTestDocs, db_conn):
         await d.save()
 
         cn = await db_conn
+
         async def get_val(name):
             return await d.q().get_field(name).run(cn)
+
         f2 = await get_val("f2")
         assert f2 == 1
         f3 = await get_val("f3")
@@ -326,16 +333,16 @@ async def test_delete_doc(MyTestDocs, db_conn):
 async def test_load_doc(MyTestDocs, db_conn):
     cn = await db_conn
     for Doc in MyTestDocs:
-        d = Doc(f2 = 1, f3 = 1)
+        d = Doc(f2=1, f3=1)
         await d.save()
 
-        l = await Doc.load(d["pkey"])
-        assert l.stored_in_db
-        for k in l:
-            assert l[k] == d[k]
+        _values = await Doc.load(d["pkey"])
+        assert _values.stored_in_db
+        for k in _values:
+            assert _values[k] == d[k]
 
         with pytest.raises(ar.NotFoundError):
-            l = await Doc.load("hello")
+            _values = await Doc.load("hello")
 
 
 @pytest.mark.asyncio
@@ -343,16 +350,16 @@ async def test_from_cursor(EmptyDoc, db_conn, aiorethink_db_session):
     cn = await db_conn
     await EmptyDoc._create_table()
 
-    for v in [1,2,3]:
-        await EmptyDoc.create(v = v)
+    for v in [1, 2, 3]:
+        await EmptyDoc.create(v=v)
 
     c = await EmptyDoc.cq().run(cn)
     ds = await EmptyDoc.from_cursor(c).as_list()
 
     assert len(ds) == 3
-    vs = [ d["v"] for d in ds ]
+    vs = [d["v"] for d in ds]
     vs.sort()
-    assert vs == [1,2,3]
+    assert vs == [1, 2, 3]
 
 
 @pytest.mark.asyncio
@@ -360,8 +367,8 @@ async def test_from_query(EmptyDoc, db_conn, aiorethink_db_session):
     cn = await db_conn
     await EmptyDoc._create_table()
 
-    for v in [1,2,3]:
-        await EmptyDoc.create(v = v)
+    for v in [1, 2, 3]:
+        await EmptyDoc.create(v=v)
 
     q = EmptyDoc.cq()
     c = await EmptyDoc.from_query(q)
@@ -375,7 +382,7 @@ async def test_from_query(EmptyDoc, db_conn, aiorethink_db_session):
     assert d1.pkey == d2.pkey
 
     q = EmptyDoc.cq().get("does not exist")
-    assert await EmptyDoc.from_query(q) == None
+    assert await EmptyDoc.from_query(q) is None
 
     with pytest.raises(TypeError):
         await EmptyDoc.from_query(r)
@@ -389,6 +396,7 @@ async def test_from_query(EmptyDoc, db_conn, aiorethink_db_session):
 async def test_subclass_trivial(aiorethink_db_session, db_conn):
     class GeneralDoc(ar.Document):
         pass
+
     class SpecializedDoc(GeneralDoc):
         pass
 
@@ -408,6 +416,7 @@ async def test_subclass_trivial(aiorethink_db_session, db_conn):
 async def test_subclass_field_inheritance_sanity(aiorethink_db_session, db_conn):
     class GeneralDoc(ar.Document):
         f1 = ar.Field()
+
     class SpecializedDoc(GeneralDoc):
         f2 = ar.Field()
 
@@ -446,14 +455,14 @@ async def test_table_changefeed(EmptyDoc, db_conn, aiorethink_db_session, event_
     table_tracker = event_loop.create_task(track_table_changes(3))
     await asyncio.sleep(0.5)
     for i in range(3):
-        d = EmptyDoc(f1 = i)
+        d = EmptyDoc(f1=i)
         await d.save()
         await asyncio.sleep(0.2)
     done, pending = await asyncio.wait([table_tracker], timeout=1.0)
-    
+
     assert table_tracker in done
-    assert table_tracker.exception() == None
-    assert table_tracker.result() == [0,1,2]
+    assert table_tracker.exception() is None
+    assert table_tracker.result() == [0, 1, 2]
 
 
 @pytest.mark.asyncio
@@ -487,7 +496,7 @@ async def test_doc_changefeed(EmptyDoc, db_conn, aiorethink_db_session, event_lo
     done, pending = await asyncio.wait([doc_tracker], timeout=1.0)
 
     assert doc_tracker in done
-    if doc_tracker.exception() != None:
+    if doc_tracker.exception() is not None:
         doc_tracker.print_stack()
-    assert doc_tracker.exception() == None
-    assert doc_tracker.result() == [0,1,2]
+    assert doc_tracker.exception() is None
+    assert doc_tracker.result() == [0, 1, 2]

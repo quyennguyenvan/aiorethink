@@ -1,7 +1,7 @@
 import asyncio
 
 import pytest
-import rethinkdb as r
+from rethinkdb import r
 
 import aiorethink as ar
 
@@ -13,7 +13,7 @@ async def test_simple_db_conn(db_conn):
     assert cn == cn_alt
 
     dbs = await r.db_list().run(cn)
-    assert dbs != None
+    assert dbs is not None
 
     await db_conn.close()
 
@@ -21,7 +21,7 @@ async def test_simple_db_conn(db_conn):
 @pytest.mark.asyncio
 async def test_cant_reconfigure_db_connection(db_conn):
     with pytest.raises(ar.AlreadyExistsError):
-        ar.configure_db_connection(db = "foo")
+        ar.configure_db_connection(db="foo")
 
 
 @pytest.mark.asyncio
@@ -70,7 +70,7 @@ async def test_multithreading(db_conn, capsys):
             # connect, run a query, disconnect, add (dead) connection object to list
             cn = await db_conn
             dbs = await r.db_list().run(cn)
-            assert dbs != None
+            assert dbs is not None
             await db_conn.close(False)
             assert not cn.is_open()
             with cns_l:
@@ -85,15 +85,15 @@ async def test_multithreading(db_conn, capsys):
 
         # just run do_stuff, then terminate
         loop.run_until_complete(do_stuff())
-        loop.run_until_complete(asyncio.gather( *asyncio.Task.all_tasks() ))
+        loop.run_until_complete(asyncio.gather(*asyncio.Task.all_tasks()))
         assert len(asyncio.Task.all_tasks()) == 0
         loop.close()
         print("##TEST thread ran all the way through##")
 
     num_threads = 10
-    threads = [ threading.Thread(target = thrd, args=(i,))
-            for i in range(num_threads) ]
-    [ t.start() for t in threads ]
+    threads = [threading.Thread(target=thrd, args=(i,))
+               for i in range(num_threads)]
+    [t.start() for t in threads]
     while True:
         await asyncio.sleep(0.1)
         with cns_l:
@@ -106,7 +106,7 @@ async def test_multithreading(db_conn, capsys):
 
     # let threads terminate
     ev.set()
-    [ t.join() for t in threads ]
+    [t.join() for t in threads]
 
     # make sure all threads ran all the way through
     out, err = capsys.readouterr()
@@ -116,19 +116,19 @@ async def test_multithreading(db_conn, capsys):
 
 
 @pytest.fixture
-def DocClasses(db_conn):
+def doc_classes(db_conn):
     class Doc1(ar.Document):
         pass
 
     class Doc2(ar.Document):
         @classmethod
-        async def _create_table_extras(cls, conn = None):
+        async def _create_table_extras(cls, conn=None):
             cn = conn or await db_conn
             await cls.cq().index_create('some_field').run(cn)
 
     class Doc3(ar.Document):
         @classmethod
-        async def _reconfigure_table(cls, conn = None):
+        async def _reconfigure_table(cls, conn=None):
             cn = conn or await db_conn
             indexes = await cls.cq().index_list().run(cn)
             if len(indexes) == 0:
@@ -151,18 +151,18 @@ async def test_init_db_create_db(db_conn):
 
 
 @pytest.mark.asyncio
-async def test_init_db_create_and_reconfigure_tables(DocClasses,
-        db_conn, aiorethink_db_session):
+async def test_init_db_create_and_reconfigure_tables(doc_classes,
+                                                     db_conn, aiorethink_db_session):
     cn = await db_conn
 
     await ar.init_app_db()
 
     tables = await r.table_list().run(cn)
-    assert len(tables) == len(DocClasses)
-    for D in DocClasses:
+    assert len(tables) == len(doc_classes)
+    for D in doc_classes:
         assert D._tablename in tables
 
-    Doc1, Doc2, Doc3 = DocClasses
+    Doc1, Doc2, Doc3 = doc_classes
 
     indexes = await Doc1.cq().index_list().run(cn)
     assert len(indexes) == 0
@@ -177,7 +177,7 @@ async def test_init_db_create_and_reconfigure_tables(DocClasses,
     indexes = await Doc3.cq().index_list().run(cn)
     assert len(indexes) == 0
 
-    await ar.init_app_db(reconfigure_db = True)
+    await ar.init_app_db(reconfigure_db=True)
     indexes = await Doc3.cq().index_list().run(cn)
     assert len(indexes) == 1
 
@@ -203,7 +203,7 @@ async def test_cursor_async_map(db_conn, aiorethink_db_session):
     cn = await db_conn
 
     await r.table_create("test").run(cn)
-    for v in [1,2,3]:
+    for v in [1, 2, 3]:
         await r.table("test").insert({"v": v}).run(cn)
 
     cursor = await r.table("test").run(cn)
@@ -214,13 +214,12 @@ async def test_cursor_async_map(db_conn, aiorethink_db_session):
         assert type(v) == int
         vs.append(v)
     vs.sort()
-    assert vs == [1,2,3]
-
+    assert vs == [1, 2, 3]
 
     cursor = await r.table("test").run(cn)
     vs = await CursorAsyncMap(cursor, mapper).as_list()
     vs.sort()
-    assert vs == [1,2,3]
+    assert vs == [1, 2, 3]
 
 
 @pytest.mark.asyncio
@@ -231,12 +230,12 @@ async def test_aiter_changes(event_loop, db_conn, aiorethink_db_session):
 
     async def track_table_changes(num_changes, vt):
         i = 0
-        q = r.table("test").pluck("v").changes(include_states = True, include_initial = True)
+        q = r.table("test").pluck("v").changes(include_states=True, include_initial=True)
         values = []
         async for obj, msg in await ar.aiter_changes(q, vt):
             i += 1
-            assert obj == None or isinstance(list(obj.values())[0], set)
-            if obj != None:
+            assert obj is None or isinstance(list(obj.values())[0], set)
+            if obj is not None:
                 values.append(list(obj.values())[0])
             assert "new_val" in msg
             if i >= num_changes:
@@ -244,19 +243,20 @@ async def test_aiter_changes(event_loop, db_conn, aiorethink_db_session):
         return values
 
     table_tracker = event_loop.create_task(track_table_changes(3,
-        ar.DictValueType(ar.StringValueType(), ar.SetValueType(ar.IntValueType()))
-        ))
+                                                               ar.DictValueType(ar.StringValueType(),
+                                                                                ar.SetValueType(ar.IntValueType()))
+                                                               ))
 
-    await asyncio.sleep(0.5) # make reasonably sure that table_tracker is listening
-    await r.table("test").insert({"id": 1, "v": [1,2,3]}).run(cn)
-    await r.table("test").insert({"v": [4,5]}).run(cn)
+    await asyncio.sleep(0.5)  # make reasonably sure that table_tracker is listening
+    await r.table("test").insert({"id": 1, "v": [1, 2, 3]}).run(cn)
+    await r.table("test").insert({"v": [4, 5]}).run(cn)
     await r.table("test").get(1).delete().run(cn)
     await r.table("test").insert({"v": [6]}).run(cn)
     await r.table("test").insert({"v": [7]}).run(cn)
 
     done, pending = await asyncio.wait([table_tracker], timeout=5.0)
     assert table_tracker in done
-    if table_tracker.exception() != None:
+    if table_tracker.exception() is not None:
         table_tracker.print_stack()
-    assert table_tracker.exception() == None
-    assert table_tracker.result() == [{1,2,3}, {4,5}]
+    assert table_tracker.exception() is None
+    assert table_tracker.result() == [{1, 2, 3}, {4, 5}]

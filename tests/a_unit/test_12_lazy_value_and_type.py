@@ -8,7 +8,7 @@ def simple_lazy_type():
     class SimpleLazyValue(ar.LazyValue):
         _val_type = ar.StringValueType(regex="^[a-z]*$")
 
-        async def _load(self, dbval, conn = None):
+        async def _load(self, dbval, conn=None):
             return dbval.lower()
 
         def _convert_to_db(self, pyval):
@@ -49,9 +49,9 @@ async def test_value_inits(simple_lazy_type):
     vt = simple_lazy_type()
 
     v0 = vt.create_value()
-    vd = vt.create_value(val_db = "HELLO")
-    vp = vt.create_value(val_cached = "hello")
-    v2 = vt.create_value(val_db = "HELLO", val_cached = "hello")
+    vd = vt.create_value(val_db="HELLO")
+    vp = vt.create_value(val_cached="hello")
+    v2 = vt.create_value(val_db="HELLO", val_cached="hello")
 
     vs = [v0, vd, vp, v2]
     vds = [vd, v2]
@@ -79,4 +79,3 @@ async def test_value_inits(simple_lazy_type):
         assert v.get() == "world"
         assert v.get_dbval() == "WORLD"
         assert vt.validate(v) == vt
-

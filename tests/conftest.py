@@ -1,8 +1,7 @@
 import asyncio
 
-import rethinkdb as r
-
 import pytest
+from rethinkdb import r
 import aiorethink
 from aiorethink.registry import registry
 
@@ -22,10 +21,10 @@ def event_loop():
     res._close()
 
 
-@pytest.fixture(scope = "session")
+@pytest.fixture(scope="session")
 def _db_config():
     # configure DB exactly once
-    aiorethink.configure_db_connection(db = "testing")
+    aiorethink.configure_db_connection(db="testing")
     return None
 
 
@@ -36,8 +35,8 @@ def db_conn(_db_config, event_loop):
     yield aiorethink.db_conn
 
     event_loop.run_until_complete(
-            aiorethink.db_conn.close(False)
-            )
+        aiorethink.db_conn.close(False)
+    )
 
 
 @pytest.yield_fixture

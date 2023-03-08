@@ -1,8 +1,7 @@
-from .errors import IllegalAccessError, IllegalSpecError, ValidationError
-from .values_and_valuetypes import AnyValueType, LazyValueType
+from .errors import IllegalSpecError, ValidationError
+from .values_and_valuetypes import AnyValueType
 
-
-__all__ = [ "Field", "FieldAlias" ]
+__all__ = ["Field", "FieldAlias"]
 
 
 class Field:
@@ -16,7 +15,7 @@ class Field:
     DB<->Python world value conversion and value validation.
     """
 
-    def __init__(self, val_type = None, **kwargs):
+    def __init__(self, val_type=None, **kwargs):
         """``val_type`` is a ``ValueType`` or None (in which case it's just
         substituted with AnyValueType()).
 
@@ -40,10 +39,10 @@ class Field:
         if self._primary_key:
             if self._indexed:
                 raise IllegalSpecError("property can't be indexed *and* "
-                    "primary_key")
+                                       "primary_key")
         self._dbname = kwargs.pop("name", None)
-        ## if we get a default value, make sure it's valid
-        self._default = kwargs.get("default", None) # NOTE get, not pop...
+        # if we get a default value, make sure it's valid
+        self._default = kwargs.get("default", None)  # NOTE get, not pop...
         validate_default_now = False
         if "default" in kwargs:
             validate_default_now = True
@@ -55,7 +54,6 @@ class Field:
                 self.validate(self._default)
             except ValidationError as e:
                 raise IllegalSpecError from e
-
 
     ###########################################################################
     # simple properties and due diligence
@@ -91,34 +89,30 @@ class Field:
 
     def __repr__(self):
         s = ("{cls}(name={self.name}, dbname={self.dbname}, indexed={self."
-                "indexed}, required="
-                "{self.required}, default={self.default}, primary_key="
-                "{self.primary_key})")
-        return s.format(cls = self.__class__, self = self)
-
+             "indexed}, required="
+             "{self.required}, default={self.default}, primary_key="
+             "{self.primary_key})")
+        return s.format(cls=self.__class__, self=self)
 
     ###########################################################################
     # value access (data descriptor protocol ++)
     ###########################################################################
 
     def __get__(self, obj, cls):
-        if obj == None:
-            return self # __get__ was called on class, not instance
+        if obj is None:
+            return self  # __get__ was called on class, not instance
         return obj._declared_fields_values.get(self._name, self._default)
 
-
-    def __set__(self, obj, val, mark_updated = True):
+    def __set__(self, obj, val, mark_updated=True):
         self.validate(val)
         obj._declared_fields_values[self._name] = val
         if mark_updated:
             obj.mark_field_updated(self._name)
 
-
     def __delete__(self, obj):
         if self._name in obj._declared_fields_values:
             del obj._declared_fields_values[self._name]
             obj.mark_field_updated(self._name)
-
 
     ###########################################################################
     # conversions RethinkDB doc <-> Python object
@@ -129,26 +123,24 @@ class Field:
 
     def _do_convert_to_doc(self, obj):
         val = self.__get__(obj, None)
-        self.validate(val) # TODO do we validate too often?
+        self.validate(val)  # TODO do we validate too often?
         return self.val_type.pyval_to_dbval(val)
 
-    def _store_from_doc(self, obj, dbval, mark_updated = False):
+    def _store_from_doc(self, obj, dbval, mark_updated=False):
         val = self.val_type.dbval_to_pyval(dbval)
-        self.__set__(obj, val, mark_updated = mark_updated)
-
+        self.__set__(obj, val, mark_updated=mark_updated)
 
     ###########################################################################
     # validation
     ###########################################################################
 
     def validate(self, val):
-        if val == None and self._required:
+        if val is None and self._required:
             raise ValidationError("no value for required property {}"
-                    .format(self._name))
+                                  .format(self._name))
         else:
             self.val_type.validate(val)
             return self
-
 
 
 class FieldAlias:
@@ -171,24 +163,23 @@ class FieldAlias:
 
     def __repr__(self):
         s = "{self.__class__.__name__}(fld_name={self.name})"
-        return s.format(self = self)
+        return s.format(self=self)
 
     __str__ = __repr__
 
     def __getattr__(self, name):
         return getattr(self._target_field, name)
 
-
     ###########################################################################
     # Descriptor protocol (because it's not dispatched by __getattr__)
     ###########################################################################
 
     def __get__(self, obj, cls):
-        if obj == None:
-            return self # __get__ was called on class, not instance
+        if obj is None:
+            return self  # __get__ was called on class, not instance
         return self._target_field.__get__(obj, cls)
 
-    def __set__(self, obj, val, mark_updated = True):
+    def __set__(self, obj, val, mark_updated=True):
         return self._target_field.__set__(obj, val, mark_updated)
 
     def __delete__(self, obj):

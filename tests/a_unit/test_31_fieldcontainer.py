@@ -1,8 +1,5 @@
-import asyncio
-
 import pytest
-import rethinkdb as r
-
+from rethinkdb import r
 import aiorethink as ar
 
 
@@ -10,6 +7,7 @@ import aiorethink as ar
 def EmptyFC():
     class EmptyFC(ar.FieldContainer):
         pass
+
     return EmptyFC
 
 
@@ -32,8 +30,8 @@ def test_repr(EmptyFC):
 ###############################################################################
 
 def test_just_undeclared_fields(EmptyFC):
-    fc1 = EmptyFC(f1 = "f1val", f2 = 2)
-    fc2 = EmptyFC(f2 = 2)
+    fc1 = EmptyFC(f1="f1val", f2=2)
+    fc2 = EmptyFC(f2=2)
     fc2["f1"] = "f1val"
     fc3 = EmptyFC()
     fc3["f1"] = "f1val"
@@ -53,13 +51,14 @@ def FCWithFields(aiorethink_session):
     class FCWithFields(ar.FieldContainer):
         f1 = ar.Field()
         f2 = ar.Field()
+
     return FCWithFields
 
 
 def test_just_declared_fields(FCWithFields):
     fc = FCWithFields()
     assert len(fc) == 2
-    assert fc.f1 == None
+    assert fc.f1 is None
     fc.f1 = 1
     assert fc.f1 == 1
     fc["f1"] = 2
@@ -85,7 +84,7 @@ def test_invalid_field_name(aiorethink_session):
 
 @pytest.fixture
 def fc_mixed(FCWithFields):
-    return FCWithFields(f1 = 1, f2 = 2, f3 = 3, f4 = 4)
+    return FCWithFields(f1=1, f2=2, f3=3, f4=4)
 
 
 def test_contains(fc_mixed):
@@ -100,7 +99,7 @@ def test_get(fc_mixed):
     assert d.get("f1") == 1
     assert d.get("f1", 2) == 1
     assert d.get("f4", 2) == 4
-    assert d.get("blah") == None
+    assert d.get("blah") is None
     assert d.get("blah", 2) == 2
 
 
@@ -111,14 +110,14 @@ def test_delitem(fc_mixed):
     assert d.f2 == 2
     assert len(d) == 4
     del d.f2
-    assert d.f2 == None
+    assert d.f2 is None
     assert len(d) == 4
     assert "f2" in d
     d["f2"] = 2
     assert len(d) == 4
     assert d.f2 == 2
     del d["f2"]
-    assert d.f2 == None
+    assert d.f2 is None
     assert len(d) == 4
     assert "f2" in d
 
@@ -132,7 +131,7 @@ def test_delitem(fc_mixed):
 
 
 def test_iter(fc_mixed):
-    keys = [ k for k in fc_mixed ]
+    keys = [k for k in fc_mixed]
     keys.sort()
     assert keys == ["f1", "f2", "f3", "f4"]
 
@@ -177,7 +176,7 @@ def test_clear(fc_mixed):
         fc_mixed.clear()
         assert len(fc_mixed) == 2
         assert fc_mixed.len(ar.UNDECLARED_ONLY) == 0
-        assert fc_mixed.f1 == None
+        assert fc_mixed.f1 is None
         with pytest.raises(KeyError):
             v = fc_mixed["f3"]
 
@@ -201,35 +200,35 @@ def test_copy(fc_mixed):
     assert len(c) < len(d)
 
     c = d.copy(ar.UNDECLARED_ONLY)
-    assert c.f1 == c.f2 == None
+    assert c.f1 == c.f2 is None
     assert c.f1 != d["f1"]
     assert c["f3"] == d["f3"]
     assert len(c) == len(d)
 
 
 def test_update(fc_mixed):
-    d = {"f1" : True,
-            "f3": True,
-            "f5": True}
-    fc_mixed.update(d, f6 = True)
+    d = {"f1": True,
+         "f3": True,
+         "f5": True}
+    fc_mixed.update(d, f6=True)
     assert len(fc_mixed) == 6
-    assert fc_mixed.f1 == True
+    assert fc_mixed.f1 is True
     assert fc_mixed.f2 == 2
-    assert fc_mixed["f3"] == True
-    assert fc_mixed["f5"] == True
-    assert fc_mixed["f6"] == True
+    assert fc_mixed["f3"] is True
+    assert fc_mixed["f5"] is True
+    assert fc_mixed["f6"] is True
 
 
 def test_update2(fc_mixed):
-    d = {"f1" : True,
-            "f3": True,
-            "f5": True}
+    d = {"f1": True,
+         "f3": True,
+         "f5": True}
     fc_mixed.update(d.items())
     assert len(fc_mixed) == 5
-    assert fc_mixed.f1 == True
+    assert fc_mixed.f1 is True
     assert fc_mixed.f2 == 2
-    assert fc_mixed["f3"] == True
-    assert fc_mixed["f5"] == True
+    assert fc_mixed["f3"] is True
+    assert fc_mixed["f5"] is True
 
 
 ###############################################################################
@@ -239,13 +238,14 @@ def test_update2(fc_mixed):
 @pytest.fixture
 def FCWithSpecialDBFieldNames(aiorethink_session):
     class FCWithSpecialDBFieldNames(ar.FieldContainer):
-        f1 = ar.Field(name = "field1")
+        f1 = ar.Field(name="field1")
+
     return FCWithSpecialDBFieldNames
 
 
 @pytest.fixture
 def fc_special_dbname(FCWithSpecialDBFieldNames):
-    return FCWithSpecialDBFieldNames(f1 = 1, f2 = 2)
+    return FCWithSpecialDBFieldNames(f1=1, f2=2)
 
 
 def test_get_key_for_dbkey(fc_special_dbname):
@@ -275,16 +275,18 @@ def FCWithSpecialDBReprField(FCWithSpecialDBFieldNames):
     class SwapCaseValueType(ar.StringValueType):
         def pyval_to_dbval(self, val):
             return val.swapcase()
-        dbval_to_pyval = pyval_to_dbval 
+
+        dbval_to_pyval = pyval_to_dbval
 
     class FCWithSpecialDBReprField(FCWithSpecialDBFieldNames):
-        f_swapcase = ar.Field(SwapCaseValueType(), default = "")
+        f_swapcase = ar.Field(SwapCaseValueType(), default="")
 
     return FCWithSpecialDBReprField
 
+
 @pytest.fixture
 def fc_with_swapcase_field(FCWithSpecialDBReprField):
-    return FCWithSpecialDBReprField(f2 = "Bla", f_swapcase = "Hello")
+    return FCWithSpecialDBReprField(f2="Bla", f_swapcase="Hello")
 
 
 def test_get_dbvalue(fc_with_swapcase_field):
@@ -292,7 +294,7 @@ def test_get_dbvalue(fc_with_swapcase_field):
     assert d.get("f_swapcase") == "Hello"
     assert d.get_dbvalue("f_swapcase") == "hELLO"
     assert d.get_dbvalue("f2") == "Bla"
-    assert d.get_dbvalue("not_exist") == None
+    assert d.get_dbvalue("not_exist") is None
     assert d.get_dbvalue("not_exist", 1) == 1
 
 
@@ -300,7 +302,7 @@ def test_set_dbvalue(fc_with_swapcase_field):
     d = fc_with_swapcase_field
     d.set_dbvalue("f_swapcase", "World")
     d.set_dbvalue("f2", "World")
-    
+
     assert d.get("f_swapcase") == "wORLD"
     assert d.get("f2") == "World"
     assert d.get_dbvalue("f_swapcase") == "World"
@@ -368,23 +370,25 @@ def FCEvenValidator(FCWithFields):
             super().validate()
             if type(self.f1) != int or type(self.f2) != int:
                 raise ar.ValidationError("f1 or f2 is not int")
+
     class FCEvenValidator(FCIntValidator):
         def validate(self):
             super().validate()
             if (self.f1 + self.f2) % 2 != 0:
                 raise ar.ValidationError("f1 + f2 not even")
+
     return FCEvenValidator
 
 
 def test_validate_fc(FCEvenValidator):
-    d = FCEvenValidator(f1 = 1, f2 = 3, f3 = 1)
+    d = FCEvenValidator(f1=1, f2=3, f3=1)
     d.validate()
     d.f2 = 5
     d.validate()
 
 
 def test_fail_validation_not_even(FCEvenValidator):
-    d = FCEvenValidator(f1 = 1, f2 = 3)
+    d = FCEvenValidator(f1=1, f2=3)
     d.validate()
     d.f1 += 1
     with pytest.raises(ar.ValidationError):
@@ -392,7 +396,7 @@ def test_fail_validation_not_even(FCEvenValidator):
 
 
 def test_fail_validation_not_int(FCEvenValidator):
-    d = FCEvenValidator(f1 = 1, f2 = "hello")
+    d = FCEvenValidator(f1=1, f2="hello")
     with pytest.raises(ar.ValidationError):
         d.validate()
 
@@ -402,15 +406,15 @@ def test_fail_validation_not_int(FCEvenValidator):
 ###############################################################################
 
 def test_from_doc(EmptyFC,
-        FCWithFields,
-        fc_mixed,
-        fc_special_dbname,
-        fc_with_swapcase_field):
+                  FCWithFields,
+                  fc_mixed,
+                  fc_special_dbname,
+                  fc_with_swapcase_field):
     fc_empty = EmptyFC()
     fc_with_fields = FCWithFields()
 
     for fc in [fc_empty, fc_with_fields, fc_mixed, fc_special_dbname,
-            fc_with_swapcase_field]:
+               fc_with_swapcase_field]:
         db_doc = fc.to_doc()
         fc2 = fc.__class__.from_doc(db_doc)
         for k, v in fc.items():
@@ -426,10 +430,10 @@ async def test_from_query(FCWithFields, db_conn, aiorethink_db_session):
 
     # zero or one result: no result
     res = await FCWithFields.from_query(r.table("test").get(1))
-    assert res == None
+    assert res is None
 
     # zero or one result: one result
-    d = FCWithFields(f1 = 1, f2 = 0, id = 1)
+    d = FCWithFields(f1=1, f2=0, id=1)
     await r.table("test").insert(d.to_doc()).run(cn)
     res = await FCWithFields.from_query(r.table("test").get(1))
     assert isinstance(res, FCWithFields)
@@ -459,7 +463,7 @@ def test_fc_vt(FCWithFields):
 
     vt = FCWithFieldsValueType()
 
-    fc = FCWithFields(f1 = 1, f2 = 2)
+    fc = FCWithFields(f1=1, f2=2)
     assert vt.validate(fc) == vt
     assert vt.pyval_to_dbval(fc) == fc.to_doc()
     assert vt.dbval_to_pyval(fc.to_doc()) == fc

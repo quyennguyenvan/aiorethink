@@ -2,7 +2,7 @@ from collections.abc import MutableMapping
 
 from .errors import AlreadyExistsError
 
-__all__ = [ "registry" ]
+__all__ = ["registry"]
 
 
 class DocumentRegistry(MutableMapping):
@@ -14,7 +14,7 @@ class DocumentRegistry(MutableMapping):
     def register(self, name, klass):
         if name in self._classes:
             raise AlreadyExistsError("A class named {} is already"
-                    " registered.".format(name))
+                                     " registered.".format(name))
         self._classes[name] = klass
 
     def unregister(self, name):
@@ -38,7 +38,6 @@ class DocumentRegistry(MutableMapping):
     def __len__(self):
         return len(self._classes)
 
-
     def resolve(self, class_or_name):
         """Convenience function: resolve a Document class either directly (if
         class_or_name is a class) or by lookup in the registry (if
@@ -50,7 +49,6 @@ class DocumentRegistry(MutableMapping):
             return self[class_or_name]
         else:
             raise TypeError
-
 
 
 registry = DocumentRegistry()

@@ -1,11 +1,10 @@
 import functools
 
-from ..errors import ValidationError
-from ..document import Document
-from ..registry import registry
 from .base_types import TypedValueType
 from .lazy import LazyValueType, LazyValue
-
+from ..document import Document
+from ..errors import ValidationError
+from ..registry import registry
 
 __all__ = ["LazyDocRefValueType", "LazyDocRef", "lazy_doc_ref", "lval"]
 
@@ -25,9 +24,9 @@ class LazyDocRef(LazyValue):
         _val_instance_of = Document
 
         def _validate(self, val):
-            if val != None and not val.stored_in_db:
+            if val is not None and not val.stored_in_db:
                 raise ValidationError("referenced document is not "
-                        "stored in the database")
+                                      "stored in the database")
 
     _val_type = ReferencedDocumentValueType()
 
@@ -35,12 +34,11 @@ class LazyDocRef(LazyValue):
         self._target = target
         super().__init__(**kwargs)
 
-    async def _load(self, dbval, conn = None):
+    async def _load(self, dbval, conn=None):
         return await self._target.load(dbval, conn)
 
     def _convert_to_db(self, pyval):
-        return pyval.__class__.pkey._do_convert_to_doc(pyval) # TODO method name now different?
-
+        return pyval.__class__.pkey._do_convert_to_doc(pyval)  # TODO method name now different?
 
 
 class LazyDocRefValueType(LazyValueType):
@@ -53,14 +51,13 @@ class LazyDocRefValueType(LazyValueType):
         self._target_resolver = functools.partial(registry.resolve, target)
         super().__init__(**kwargs)
 
-    def create_value(self, val_cached = None, val_db = None):
+    def create_value(self, val_cached=None, val_db=None):
         return self.__class__._val_instance_of(
-                val_db = val_db, val_cached = val_cached,
-                target = self._target_resolver())
+            val_db=val_db, val_cached=val_cached,
+            target=self._target_resolver())
 
     def dbval_to_pyval(self, dbval):
-        return self.create_value(val_db = dbval)
-
+        return self.create_value(val_db=dbval)
 
 
 def lazy_doc_ref(doc):
@@ -68,8 +65,8 @@ def lazy_doc_ref(doc):
     """
     if isinstance(doc, Document):
         return LazyDocRef(
-                target = doc.__class__,
-                val_cached = doc)
+            target=doc.__class__,
+            val_cached=doc)
     else:
         raise TypeError("{} is not a Document".format(repr(doc)))
 

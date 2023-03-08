@@ -3,8 +3,10 @@ import pytest
 import aiorethink
 from aiorethink.registry import registry
 
+
 class Dummy:
     pass
+
 
 class Dummy2:
     pass

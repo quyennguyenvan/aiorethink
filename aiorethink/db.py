@@ -1,9 +1,6 @@
-import threading
-import asyncio
-import weakref
-from functools import partial
-import inspect
 import collections
+import inspect
+import threading
 
 from rethinkdb import r
 
@@ -32,7 +29,7 @@ class _OneConnPerThreadPool:
         self._connect_kwargs = None
 
     def configure_db_connection(self, **connect_kwargs):
-        if self._connect_kwargs != None:
+        if self._connect_kwargs is not None:
             raise AlreadyExistsError("Can not re-configure DB connection(s)")
         self._connect_kwargs = connect_kwargs
 
@@ -42,7 +39,7 @@ class _OneConnPerThreadPool:
     async def get(self):
         """Gets or opens the thread's DB connection.
         """
-        if self._connect_kwargs == None:
+        if self._connect_kwargs is None:
             raise IllegalAccessError("DB connection parameters not set yet")
 
         if not hasattr(self._tl, "conn"):
@@ -161,10 +158,10 @@ class CursorAsyncIterator(collections.abc.AsyncIterator):
         """Turns the asynchronous iterator into a list by doing the iteration
         and collecting the resulting items into a list.
         """
-        l = []
+        _list = []
         async for item in self:
-            l.append(item)
-        return l
+            _list.append(item)
+        return _list
 
 
 class CursorAsyncMap(CursorAsyncIterator):

@@ -1,6 +1,5 @@
 from ..errors import StopValidation, ValidationError
 
-
 __all__ = ["AnyValueType", "TypedValueType"]
 
 
@@ -11,7 +10,7 @@ class AnyValueType:
     * how to make sure some value is of that type (*validation*)
     * how values of that type are represented in the DB and Python worlds, and
       how to convert safely between those representations (*conversion*).
-    
+
     `AnyValueType` itself is the most general value type that validates any
     Python object and does not convert anything, unless it is specialized in
     some way.
@@ -54,8 +53,8 @@ class AnyValueType:
     -----------------------
 
     Subclasses that want to specify their own validation should override
-    ``_validate``. 
-    
+    ``_validate``.
+
     extra_validators, if present, must be an iterable of callable which each
     accept two parameters: the ValueType object the validation runs on (think
     "self"), and the value to be validated.
@@ -70,7 +69,7 @@ class AnyValueType:
     ``dbval_to_pyval``.
     """
 
-    def __init__(self, extra_validators = None, forbid_none = False):
+    def __init__(self, extra_validators=None, forbid_none=False):
         """Optional kwargs:
         * extra_validators: iterable of extra validators tacked onto the
             object. See ``ValueType`` class doc for more on this.
@@ -80,7 +79,6 @@ class AnyValueType:
         self._extra_validators = extra_validators
         self._forbid_none = forbid_none
 
-
     @classmethod
     def _find_methods_in_reverse_mro(cls, name):
         """Collects methods with matching name along the method resolution
@@ -88,23 +86,22 @@ class AnyValueType:
         """
         # we have a cache for this. See if we get a hit for name
         cache = cls.__dict__.get("_find_methods_cache", None)
-        if cache == None:
+        if cache is None:
             cls._find_methods_cache = cache = {}
         else:
             methods = cache.get(name, None)
-            if methods != None:
+            if methods is not None:
                 return methods
 
         # still here? then we need to do the work
         methods = []
         for c in cls.__mro__:
             method = c.__dict__.get(name, None)
-            if method != None:
+            if method is not None:
                 methods.append(method)
         methods.reverse()
         cache[name] = methods
         return methods
-
 
     ###########################################################################
     # validation
@@ -119,11 +116,10 @@ class AnyValueType:
         If you need the validation cascade to stop after this validator, raise
         StopValidation.
         """
-        if val == None and self._forbid_none:
+        if val is None and self._forbid_none:
             raise ValidationError("None is not an allowed value.")
 
-
-    def validate(self, val = None):
+    def validate(self, val=None):
         """Runs all validators, beginning with the most basic _validate (the
         one defined furthest back in the method resolution order), and ending
         with the extra_validators that might be attached to the object. The
@@ -134,7 +130,7 @@ class AnyValueType:
         """
         validators = self.__class__._find_methods_in_reverse_mro("_validate")
 
-        if self._extra_validators != None:
+        if self._extra_validators is not None:
             validators = validators[:]
             validators.extend(self._extra_validators)
 
@@ -144,7 +140,6 @@ class AnyValueType:
             except StopValidation as s:
                 break
         return self
-
 
     ###########################################################################
     # conversions RethinkDB doc <-> Python object
@@ -165,7 +160,6 @@ class AnyValueType:
         return dbval
 
 
-
 class TypedValueType(AnyValueType):
     """Base for ValueTypes whose validation simply checks if a value
     isinstance() of a given type. Just override _val_instance_of with a type.
@@ -174,6 +168,6 @@ class TypedValueType(AnyValueType):
 
     def _validate(self, val):
         oktype = self._val_instance_of
-        if val != None and not isinstance(val, oktype):
+        if val is not None and not isinstance(val, oktype):
             raise ValidationError("value {} is not an instance of {}, but "
-                "{}".format(repr(val), str(oktype), str(val.__class__)))
+                                  "{}".format(repr(val), str(oktype), str(val.__class__)))

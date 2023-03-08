@@ -1,19 +1,18 @@
 import collections
 import functools
-import inspect
 
 import inflection
 from rethinkdb import r
 
-from . import ALL, DECLARED_ONLY, UNDECLARED_ONLY
+from . import ALL
+from .db import db_conn, ChangesAsyncMap, \
+    _run_query
 from .errors import IllegalSpecError, AlreadyExistsError, NotFoundError
-from .registry import registry
-from .db import db_conn, CursorAsyncIterator, CursorAsyncMap, ChangesAsyncMap,\
-            _run_query
 from .field import Field, FieldAlias
+from .registry import registry
 from .values_and_valuetypes.field_container import FieldContainer, _MetaFieldContainer
 
-__all__ = [ "Document" ]
+__all__ = ["Document"]
 
 
 class _MetaDocument(_MetaFieldContainer):
@@ -31,15 +30,13 @@ class _MetaDocument(_MetaFieldContainer):
         super().__init__(name, bases, classdict)
 
 
-
-class Document(FieldContainer, metaclass = _MetaDocument):
+class Document(FieldContainer, metaclass=_MetaDocument):
     """
     Non-obvious customization:
     cls._table_create_options dict with extra kwargs for rethinkdb.table_create
     """
-    _tablename = None # customize with _get_tablename - don't set this attr
-    _table_create_options = None # dict with extra kwargs for rethinkdb.table_create
-
+    _tablename = None  # customize with _get_tablename - don't set this attr
+    _table_create_options = None  # dict with extra kwargs for rethinkdb.table_create
 
     def __init__(self, **kwargs):
         """Makes a Document object, but does not save it yet to the database.
@@ -50,9 +47,8 @@ class Document(FieldContainer, metaclass = _MetaDocument):
         """
         super().__init__(**kwargs)
 
-        self._stored_in_db = False # will be set to True if Doc is retrieved
-                                   # from DB, and when saved to DB
-
+        self._stored_in_db = False  # will be set to True if Doc is retrieved
+        # from DB, and when saved to DB
 
     ###########################################################################
     # class creation (metaclass constructor calls this)
@@ -69,7 +65,6 @@ class Document(FieldContainer, metaclass = _MetaDocument):
         """
         return inflection.tableize(cls.__name__)
 
-
     @classmethod
     def _check_field_spec(cls):
         # make sure that this runs only for subclasses of Document. There's no
@@ -82,18 +77,18 @@ class Document(FieldContainer, metaclass = _MetaDocument):
         pk_name = None
         for fld_name, fld_obj in cls._declared_fields_objects.items():
             if fld_obj.primary_key:
-                if pk_name != None:
+                if pk_name is not None:
                     raise IllegalSpecError("Document can't have more than 1 "
-                        "primary key")
+                                           "primary key")
                 pk_name = fld_name
 
         # primary key: either we have an explicitly declared one, or we add a
         # primary key field named "id"
-        if pk_name == None:
+        if pk_name is None:
             if hasattr(cls, "id"):
                 raise IllegalSpecError("Need {}.id for RethinkDB's automatic "
-                    "primary key attribute")
-            cls.id = Field(primary_key = True)
+                                       "primary key attribute")
+            cls.id = Field(primary_key=True)
             cls.id.name = "id"
             cls._declared_fields_objects[cls.id.name] = cls.id
             cls._dbname_to_field_name[cls.id.dbname] = cls.id.name
@@ -102,9 +97,8 @@ class Document(FieldContainer, metaclass = _MetaDocument):
         # add cls.pkey alias, pointing to the primary key field
         if getattr(cls, "pkey", None) and not isinstance(cls.pkey, FieldAlias):
             raise IllegalSpecError("'pkey' attribute is reserved for a "
-                    "FieldAlias to the primary key field.")
+                                   "FieldAlias to the primary key field.")
         cls.pkey = FieldAlias(getattr(cls, pk_name))
-
 
     ###########################################################################
     # simple properties and due diligence
@@ -112,37 +106,35 @@ class Document(FieldContainer, metaclass = _MetaDocument):
 
     def __repr__(self):
         s = "{o.__class__.__name__}({o.__class__.pkey.name}={o.pkey})"
-        return s.format(o = self)
-
+        return s.format(o=self)
 
     @property
     def stored_in_db(self):
         return self._stored_in_db
-
 
     ###########################################################################
     # DB table management
     ###########################################################################
 
     @classmethod
-    async def table_exists(cls, conn = None):
+    async def table_exists(cls, conn=None):
         cn = conn or await db_conn
         db_tables = await r.table_list().run(cn)
         return cls._tablename in db_tables
 
     @classmethod
-    async def _create_table(cls, conn = None):
+    async def _create_table(cls, conn=None):
         cn = conn or await db_conn
         # make sure table doesn't exist yet
         if await cls.table_exists(cn):
             raise AlreadyExistsError("table {} already exists"
-                    .format(cls._tablename))
+                                     .format(cls._tablename))
 
         # assemble kwargs for call to table_create
         create_args = {}
-        if cls._table_create_options != None:
+        if cls._table_create_options is not None:
             create_args.update(cls._table_create_options)
-        ## declare primary key field if it is not "id"
+        # declare primary key field if it is not "id"
         if cls.pkey.dbname != "id":
             create_args["primary_key"] = cls.pkey.dbname
 
@@ -156,7 +148,7 @@ class Document(FieldContainer, metaclass = _MetaDocument):
         await cls._create_table_extras(cn)
 
     @classmethod
-    async def _create_table_extras(cls, conn = None):
+    async def _create_table_extras(cls, conn=None):
         """Override this classmethod in subclasses to take care of complex
         secondary indices and other advanced stuff that we can't (or don't)
         automatically deal with.
@@ -166,7 +158,7 @@ class Document(FieldContainer, metaclass = _MetaDocument):
         pass
 
     @classmethod
-    async def _reconfigure_table(cls, conn = None):
+    async def _reconfigure_table(cls, conn=None):
         """In the absence of proper migrations in aiorethink, there is no nice
         way to adapt an existing database to changes to either your
         _table_create_options or your _create_table_extras().
@@ -201,7 +193,6 @@ class Document(FieldContainer, metaclass = _MetaDocument):
         """
         pass
 
-
     ###########################################################################
     # DB queries (load, save, delete...) and related funcs
     ###########################################################################
@@ -212,9 +203,8 @@ class Document(FieldContainer, metaclass = _MetaDocument):
         """
         return r.table(cls._tablename)
 
-
     @classmethod
-    async def aiter_table_changes(cls, changes_query = None, conn = None):
+    async def aiter_table_changes(cls, changes_query=None, conn=None):
         """Executes `changes_query` and returns an asynchronous iterator (a
         ``ChangesAsyncMap``) that yields (document object, changefeed message)
         tuples.
@@ -237,34 +227,32 @@ class Document(FieldContainer, metaclass = _MetaDocument):
           the caller than the former version.
         """
         if changes_query is None:
-            changes_query = cls.cq().changes(include_types = True)
+            changes_query = cls.cq().changes(include_types=True)
 
         feed = await _run_query(changes_query)
-        mapper = functools.partial(cls.from_doc, stored_in_db = True)
+        mapper = functools.partial(cls.from_doc, stored_in_db=True)
 
         return ChangesAsyncMap(feed, mapper)
 
-
     @classmethod
-    async def load(cls, pkey_val, conn = None):
+    async def load(cls, pkey_val, conn=None):
         """Loads an object from the database, using its primary key for
         identification.
         """
         obj = await cls.from_query(
-                cls.cq().get(pkey_val),
-                conn)
+            cls.cq().get(pkey_val),
+            conn)
 
-        if obj == None:
+        if obj is None:
             raise NotFoundError("no matching document")
         return obj
 
-
+    # noinspection PyMethodOverriding
     @classmethod
     def from_doc(cls, doc, stored_in_db, **kwargs):
         obj = super().from_doc(doc, **kwargs)
         obj._stored_in_db = stored_in_db
         return obj
-
 
     @classmethod
     async def create(cls, **kwargs):
@@ -275,22 +263,20 @@ class Document(FieldContainer, metaclass = _MetaDocument):
         await obj.save()
         return obj
 
-
     def q(self):
         """RethinkDB query prefix for queries on the document.
         """
         pkey_dbval = self.__class__.pkey._do_convert_to_doc(self)
         return self.__class__.cq().get(pkey_dbval)
 
-
-    async def save(self, conn = None):
+    async def save(self, conn=None):
         cn = conn or await db_conn
         if self._stored_in_db:
             return await self._update_in_db(cn)
         else:
             return await self._insert_into_db(cn)
 
-    async def _update_in_db(self, conn = None):
+    async def _update_in_db(self, conn=None):
         cn = conn or await db_conn
         if len(self._updated_fields) == 0:
             return
@@ -309,7 +295,7 @@ class Document(FieldContainer, metaclass = _MetaDocument):
             else:
                 # undeclared field: we assume that the value is serializable
                 update_dict[fld_name] = self._undeclared_fields.get(fld_name,
-                        None)
+                                                                    None)
                 # NOTE the field might have been deleted from
                 # _undeclared_fields (see __delitem__). But since we can not
                 # remove fields from a RethinkDB document, we have to overwrite
@@ -318,11 +304,11 @@ class Document(FieldContainer, metaclass = _MetaDocument):
 
         # update in DB
         self._updated_fields = {}
-        return await self.q().\
-                update(update_dict).\
-                run(cn)
+        return await self.q(). \
+            update(update_dict). \
+            run(cn)
 
-    async def _insert_into_db(self, conn = None):
+    async def _insert_into_db(self, conn=None):
         cn = conn or await db_conn
 
         self.validate()
@@ -331,7 +317,7 @@ class Document(FieldContainer, metaclass = _MetaDocument):
         insert_dict = {}
         for fld_name, fld_obj in self.__class__._declared_fields_objects.items():
             # don't store if primary key and not set (then DB should autogenerate)
-            if fld_obj.primary_key and self.get(fld_name, None) == None:
+            if fld_obj.primary_key and self.get(fld_name, None) is None:
                 continue
             # convert field value to DB-serializable format
             db_key = fld_obj.dbname
@@ -341,11 +327,11 @@ class Document(FieldContainer, metaclass = _MetaDocument):
 
         # insert document into DB
         self._updated_fields = {}
-        insert_result = await self.__class__.cq().\
-                insert(insert_dict).\
-                run(cn)
+        insert_result = await self.__class__.cq(). \
+            insert(insert_dict). \
+            run(cn)
 
-        ## the DB might have made an automatic id for us
+        # the DB might have made an automatic id for us
         if "generated_keys" in insert_result:
             new_key_dbval = insert_result["generated_keys"][0]
             self.__class__.pkey._store_from_doc(self, new_key_dbval)
@@ -353,15 +339,13 @@ class Document(FieldContainer, metaclass = _MetaDocument):
         self._stored_in_db = True
         return insert_result
 
-
-    async def delete(self, conn = None, **kwargs_delete):
+    async def delete(self, conn=None, **kwargs_delete):
         cn = conn or await db_conn
         res = await self.q().delete(**kwargs_delete).run(cn)
         self._stored_in_db = False
         return res
 
-
-    def copy(self, which = ALL):
+    def copy(self, which=ALL):
         """Creates a new Document (same class as self) and (shallow) copies all
         fields except for the primary key field, which remains unset. The new
         Document is returned.
@@ -370,23 +354,20 @@ class Document(FieldContainer, metaclass = _MetaDocument):
         del doc[self.__class__.pkey.name]
         return doc
 
-
     ###########################################################################
     # Point changefeeds (changefeeds on a single document object)
     ###########################################################################
 
     class ChangesAsyncIterator(collections.abc.AsyncIterator):
-        def __init__(self, doc, conn = None):
+        def __init__(self, doc, conn=None):
             self.doc = doc
             self.conn = conn
 
-
         async def __aiter__(self):
-            query = self.doc.q().changes(include_initial = True,
-                    include_types = True)
+            query = self.doc.q().changes(include_initial=True,
+                                         include_types=True)
             self.cursor = await _run_query(query, self.conn)
             return self
-
 
         async def __anext__(self):
             while True:
@@ -401,24 +382,23 @@ class Document(FieldContainer, metaclass = _MetaDocument):
                 doc = self.doc
 
                 # update doc and return changed fields
-                if msg["new_val"] == None:
+                if msg["new_val"] is None:
                     doc._stored_in_db = False
                     return doc, None, msg
                 else:
                     changed_fields = {k: v for k, v in msg["new_val"].items()
-                            if k not in doc or v != doc.get_dbvalue(k)}
+                                      if k not in doc or v != doc.get_dbvalue(k)}
 
                     if not changed_fields:
                         continue
 
                     for k, v in changed_fields.items():
                         doc_key = doc.get_key_for_dbkey(k)
-                        doc.set_dbvalue(doc_key, v, mark_updated = False)
+                        doc.set_dbvalue(doc_key, v, mark_updated=False)
 
                     return doc, list(changed_fields.keys()), msg
 
-
-    async def aiter_changes(self, conn = None):
+    async def aiter_changes(self, conn=None):
         """Note: be careful what you wish for. The document object is updated
         in place when you iterate. Unsaved changes to it might then be
         overwritten.

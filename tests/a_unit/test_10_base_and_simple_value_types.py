@@ -10,8 +10,8 @@ import aiorethink as ar
 def test_trivial_value_type():
     vt = ar.AnyValueType()
 
-    testvals = [None, 0, 1, False, "hello", [1,2,3], {1,2,3},
-            ar.AnyValueType()]
+    testvals = [None, 0, 1, False, "hello", [1, 2, 3], {1, 2, 3},
+                ar.AnyValueType()]
 
     for testval in testvals:
         assert vt.validate(testval) == vt
@@ -28,7 +28,7 @@ def test_any_with_custom_validator():
         if val % 2 != 0:
             raise ar.ValidationError
 
-    vt = ar.AnyValueType(extra_validators = [validate_int, validate_even])
+    vt = ar.AnyValueType(extra_validators=[validate_int, validate_even])
 
     assert vt.validate(2) == vt
     with pytest.raises(ar.ValidationError):
@@ -47,14 +47,14 @@ def test_any_with_stop_validation():
         if val % 3 != 0:
             raise ar.ValidationError
 
-    vt = ar.AnyValueType(extra_validators = [validate_odd, validate_3])
+    vt = ar.AnyValueType(extra_validators=[validate_odd, validate_3])
 
     assert vt.validate(5) == vt
 
 
 def test_any_forbid_none():
-    vt1 = ar.AnyValueType(forbid_none = False)
-    vt2 = ar.AnyValueType(forbid_none = True)
+    vt1 = ar.AnyValueType(forbid_none=False)
+    vt2 = ar.AnyValueType(forbid_none=True)
 
     assert vt1.validate(None) == vt1
     with pytest.raises(ar.ValidationError):
@@ -82,7 +82,7 @@ def test_string_simple():
 
 
 def test_string_maxlen():
-    vt = ar.StringValueType(max_length = 3)
+    vt = ar.StringValueType(max_length=3)
     assert vt.validate("Hel") == vt
     assert vt.validate(None) == vt
     with pytest.raises(ar.ValidationError):
@@ -90,7 +90,7 @@ def test_string_maxlen():
 
 
 def test_string_re():
-    vt = ar.StringValueType(regex = "^[a-z]+$")
+    vt = ar.StringValueType(regex="^[a-z]+$")
     assert vt.validate("abcde")
     with pytest.raises(ar.ValidationError):
         vt.validate("ABCDE")
@@ -99,7 +99,7 @@ def test_string_re():
 
 
 def test_string_re_and_maxlen():
-    vt = ar.StringValueType(max_length = 3, regex = "^[a-z]+$")
+    vt = ar.StringValueType(max_length=3, regex="^[a-z]+$")
     assert vt.validate("abc")
     with pytest.raises(ar.ValidationError):
         vt.validate("abcde")

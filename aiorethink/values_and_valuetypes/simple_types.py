@@ -1,8 +1,7 @@
 import re
 
-from ..errors import ValidationError
 from .base_types import TypedValueType
-
+from ..errors import ValidationError
 
 __all__ = ["IntValueType", "StringValueType"]
 
@@ -22,9 +21,9 @@ class StringValueType(TypedValueType):
         super().__init__(**kwargs)
 
     def _validate(self, val):
-        if val != None and self._max_length and len(val) > self._max_length:
+        if val is not None and self._max_length and len(val) > self._max_length:
             raise ValidationError("string is too long ({} chars)"
-                    .format(len(val)))
+                                  .format(len(val)))
 
         if self._regex and not self._regex.search(val or ""):
             raise ValidationError("string does not match validation regex")

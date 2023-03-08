@@ -1,7 +1,4 @@
-import asyncio
-
 import pytest
-import rethinkdb as r
 
 import aiorethink as ar
 
@@ -16,16 +13,16 @@ def test_basic_field():
 
     assert isinstance(f.val_type, ar.AnyValueType)
 
-    assert f.name == None
-    assert f.dbname == None # this is never the case when the field is inside a FieldContainer
-    f.name = "f" # because this is done by FieldContainer
+    assert f.name is None
+    assert f.dbname is None  # this is never the case when the field is inside a FieldContainer
+    f.name = "f"  # because this is done by FieldContainer
     assert f.name == "f"
     assert f.dbname == "f"
 
     assert not f.indexed
     assert not f.required
     assert not f.primary_key
-    assert f.default == None
+    assert f.default is None
 
     assert f.validate(None) == f
     assert f.validate(1) == f
@@ -42,32 +39,32 @@ def test_field_with_type():
 
 def test_field_with_type_and_default():
     with pytest.raises(ar.IllegalSpecError):
-        f = ar.Field(ar.IntValueType(), default = "hello")
+        f = ar.Field(ar.IntValueType(), default="hello")
 
-    f = ar.Field(ar.StringValueType(), default = "hello")
+    f = ar.Field(ar.StringValueType(), default="hello")
 
 
 def test_field_properties():
-    f = ar.Field(default = "hello")
+    f = ar.Field(default="hello")
     assert f.default == "hello"
 
-    f = ar.Field(indexed = True)
-    assert f.indexed == True
+    f = ar.Field(indexed=True)
+    assert f.indexed is True
 
-    f = ar.Field(required = True)
+    f = ar.Field(required=True)
     with pytest.raises(ar.ValidationError):
         f.validate(None)
     assert f.validate(10) == f
 
-    f = ar.Field(primary_key = True)
-    assert f.primary_key == True
+    f = ar.Field(primary_key=True)
+    assert f.primary_key is True
 
     with pytest.raises(ar.IllegalSpecError):
-        f = ar.Field(indexed = True, primary_key = True)
+        f = ar.Field(indexed=True, primary_key=True)
 
-    f = ar.Field(name = "dbf")
+    f = ar.Field(name="dbf")
     assert f.dbname == "dbf"
-    f.name = "f" # this is what FieldContainer does
+    f.name = "f"  # this is what FieldContainer does
     assert f.name == "f"
     assert f.dbname == "dbf"
 
@@ -105,10 +102,11 @@ def test_simple_get_set_delete():
     class FC(ar.FieldContainer):
         f1 = ar.Field()
         f1a = ar.FieldAlias(f1)
+
     fc = FC()
 
-    assert fc.f1 == None
-    assert fc.f1a == None
+    assert fc.f1 is None
+    assert fc.f1a is None
     fc.f1 = 1
     assert fc.f1 == 1
     assert fc.f1a == 1
@@ -116,22 +114,23 @@ def test_simple_get_set_delete():
     assert fc.f1 == 2
     assert fc.f1a == 2
     del fc.f1
-    assert fc.f1 == None
-    assert fc.f1a == None
+    assert fc.f1 is None
+    assert fc.f1a is None
     del fc.f1a
-    assert fc.f1 == None
-    assert fc.f1a == None
+    assert fc.f1 is None
+    assert fc.f1a is None
     fc.f1a = 1
     assert fc.f1 == 1
     assert fc.f1a == 1
     del fc.f1a
-    assert fc.f1 == None
-    assert fc.f1a == None
+    assert fc.f1 is None
+    assert fc.f1a is None
 
 
 def test_default_value():
     class FC(ar.FieldContainer):
-        f = ar.Field(default = 10)
+        f = ar.Field(default=10)
+
     fc = FC()
 
     assert fc.f == 10
@@ -146,10 +145,11 @@ def test_default_value():
 def test_field_to_doc():
     class FC(ar.FieldContainer):
         f1 = ar.Field()
+
     fc = FC()
 
     e = fc.to_doc()
-    assert e["f1"] == None
+    assert e["f1"] is None
 
     fc.f1 = 1
     e = fc.to_doc()
@@ -160,7 +160,7 @@ def test_field_from_doc():
     class FC(ar.FieldContainer):
         f1 = ar.Field()
 
-    doc = { "f1": "hello" }
+    doc = {"f1": "hello"}
     fc = FC.from_doc(doc)
 
     assert fc.f1 == "hello"

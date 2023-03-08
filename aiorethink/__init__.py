@@ -1,9 +1,10 @@
 from rethinkdb import r
+
 r.set_loop_type("asyncio")
 
 # constants
-ALL             = 0
-DECLARED_ONLY   = 1
+ALL = 0
+DECLARED_ONLY = 1
 UNDECLARED_ONLY = 2
 
 from .version import *
