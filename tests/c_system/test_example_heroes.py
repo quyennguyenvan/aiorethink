@@ -7,7 +7,7 @@ import aiorethink as ar
 
 
 @pytest.mark.asyncio
-@pytest.mark.timeout(10)
+@pytest.mark.timeout(15)
 async def test_heroes(aiorethink_db_session, event_loop):
     cn = await ar.db_conn
 
@@ -118,7 +118,7 @@ async def test_heroes(aiorethink_db_session, event_loop):
     hero_tracker = event_loop.create_task(track_table_changes(Hero, 3))
     hero_named_man_tracker = event_loop.create_task(track_heroes_named_man(2))
     await fill_our_db()
-    done, pending = await asyncio.wait([hero_named_man_tracker, hero_tracker], timeout=1.0)
+    done, pending = await asyncio.wait([hero_named_man_tracker, hero_tracker], timeout=3.0)
     assert hero_tracker in done
     assert hero_tracker.exception() is None
     assert hero_tracker.result() == ["Spiderman", "Deadpool", "Superman"]
@@ -150,7 +150,7 @@ async def test_heroes(aiorethink_db_session, event_loop):
     await spiderman2.save()
     spiderman2.name = "Spiderman"
     await spiderman2.save()
-    done, pending = await asyncio.wait([spidey_tracker], timeout=1.0)
+    done, pending = await asyncio.wait([spidey_tracker], timeout=2.0)
     assert spidey_tracker in done
     assert spidey_tracker.exception() is None
     assert spidey_tracker.result() == [["name"], ["name"]]

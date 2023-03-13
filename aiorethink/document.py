@@ -362,14 +362,16 @@ class Document(FieldContainer, metaclass=_MetaDocument):
         def __init__(self, doc, conn=None):
             self.doc = doc
             self.conn = conn
+            self.query = self.doc.q().changes(include_initial=True,
+                                              include_types=True)
+            self.cursor = None
 
-        async def __aiter__(self):
-            query = self.doc.q().changes(include_initial=True,
-                                         include_types=True)
-            self.cursor = await _run_query(query, self.conn)
+        def __aiter__(self):
             return self
 
         async def __anext__(self):
+            if self.cursor is None:
+                self.cursor = await _run_query(self.query, self.conn)
             while True:
                 try:
                     msg = await self.cursor.next()

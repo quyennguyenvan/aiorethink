@@ -145,7 +145,7 @@ class CursorAsyncIterator(collections.abc.AsyncIterator):
     def __init__(self, cursor):
         self.cursor = cursor
 
-    async def __aiter__(self):
+    def __aiter__(self):
         return self
 
     async def __anext__(self):
@@ -216,8 +216,6 @@ class ChangesAsyncMap(CursorAsyncIterator):
             message = await super().__anext__()
 
             if "new_val" not in message:
-                continue
-            if message['new_val'] is None:  # deletion events
                 continue
 
             mapped = self.mapper(message["new_val"])

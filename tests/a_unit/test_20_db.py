@@ -85,8 +85,10 @@ async def test_multithreading(db_conn, capsys):
 
         # just run do_stuff, then terminate
         loop.run_until_complete(do_stuff())
-        loop.run_until_complete(asyncio.gather(*asyncio.Task.all_tasks()))
-        assert len(asyncio.Task.all_tasks()) == 0
+        v0 = asyncio._all_tasks_compat()
+        v1 = asyncio.gather(*v0)
+        loop.run_until_complete(v1)
+        assert len(asyncio._all_tasks_compat()) == 0
         loop.close()
         print("##TEST thread ran all the way through##")
 
