@@ -210,6 +210,8 @@ class FieldContainer(collections.abc.MutableMapping,
 
         # construct field values from doc and store them in FieldContainer
         # object
+        if doc.items() == None:
+            raise AssertionError(f"{doc.times()} is NoneType. Bug!")
         for dbkey, dbval in doc.items():
             fld_name = cls._dbname_to_field_name.get(dbkey, None)
             if fld_name is not None:
